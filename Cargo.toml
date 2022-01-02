@@ -8,3 +8,5 @@ edition = "2018"
 [dependencies]
 sdl2 = "0.35.1"
 rand = "0.8.4"
+lazy_static = "1.4.0"
+dyn-clone = "1.0.4"
