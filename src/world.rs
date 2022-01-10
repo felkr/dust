@@ -1,11 +1,11 @@
-use crate::element::{Element, Sand};
+use crate::element::{Element};
 use crate::Object;
 use num::PrimInt;
-use sdl2::pixels::Color;
-use std::convert::{TryFrom, TryInto};
-use std::ops::Add;
+
+
+
 use std::rc::Rc;
-use std::cell::RefCell;
+
 
 pub struct ParticleStorage<'a>(pub Vec<Vec<Option<Object<'a>>>>);
 
@@ -20,6 +20,9 @@ impl ParticleStorage<'static> {
         y: T,
         element: &Option<Rc<(dyn Element<'static>)>>,
     ) -> Option<Object<'static>> {
+        if x.to_usize().unwrap() >= self.0.len() || y.to_usize().unwrap() >= self.0[0].len() {
+            return None;
+        }
         if let Some(element) = element {
             let mut o = Object::new(element.clone());
             o.clone().element.init(&mut o);

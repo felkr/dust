@@ -25,7 +25,7 @@ impl<'a> Element<'a> for Sand {
     fn init(&self, object: &mut Object<'a>) {
         object.color = Color::RGB(201, 193, 181);
     }
-    fn simulate(&self, object: &mut Object<'a>) {}
+    fn simulate(&self, _object: &mut Object<'a>) {}
 }
 impl<'a> Element<'a> for Wall {
     fn name(&self) -> &'a str {
@@ -38,7 +38,7 @@ impl<'a> Element<'a> for Wall {
     fn init(&self, object: &mut Object<'a>) {
         object.color = Color::GREY;
     }
-    fn simulate(&self, object: &mut Object<'a>) {}
+    fn simulate(&self, _object: &mut Object<'a>) {}
 }
 // This is somewhat of a hack, but it's required until the never type gets stabilized
 impl<'a> Element<'a> for () {
@@ -50,11 +50,11 @@ impl<'a> Element<'a> for () {
         unreachable!();
     }
 
-    fn simulate(&self, object: &mut Object<'a>) {
+    fn simulate(&self, _object: &mut Object<'a>) {
         unreachable!();
     }
 
-    fn init(&self, object: &mut Object<'a>) {
+    fn init(&self, _object: &mut Object<'a>) {
         unreachable!();
     }
 }
