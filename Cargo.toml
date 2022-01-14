@@ -10,7 +10,8 @@ rand = "0.8.4"
 lazy_static = "1.4.0"
 dyn-clone = "1.0.4"
 num = "0.4.0"
+rayon = "1.5.1"
 
 [dependencies.sdl2]
-features = ["image", "gfx"]
+features = ["image", "gfx", "ttf"]
 version = "0.35.1"

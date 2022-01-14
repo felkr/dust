@@ -7,6 +7,7 @@ pub struct Object<'a> {
     pub velocity: (i32, i32),
     pub color: Color,
     pub element: Rc<dyn Element<'a>>,
+    pub die: bool,
 }
 impl Default for Object<'_> {
     fn default() -> Self {
@@ -14,6 +15,7 @@ impl Default for Object<'_> {
             velocity: (0, 0),
             color: Color::RGB(0, 0, 0),
             element: Rc::new(Sand),
+            die: false,
         }
     }
 }
@@ -23,6 +25,7 @@ impl<'a> Object<'a> {
             element,
             velocity: (0, 0),
             color: Color::WHITE,
+            die: false,
         };
         obj.clone().element.init(&mut obj);
         obj

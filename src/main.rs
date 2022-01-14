@@ -1,6 +1,7 @@
-use element::{Sand, Wall};
+use element::{Element, Fire, Sand, Wall};
 use object::Object;
 use rand::Rng;
+use rayon::prelude::*;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::image::LoadSurface;
 use sdl2::keyboard::Keycode;
@@ -8,7 +9,7 @@ use sdl2::mouse::{Cursor, MouseButton, MouseWheelDirection, SystemCursor};
 use sdl2::pixels::{Color, PixelFormatEnum};
 use sdl2::rect::Rect;
 use sdl2::render::WindowCanvas;
-use sdl2::surface::Surface;
+use sdl2::surface::{self, Surface};
 use sdl2::{event::Event, rect};
 use std::collections::HashSet;
 use std::convert::TryInto;
@@ -47,8 +48,10 @@ fn simulate(world: &mut ParticleStorage) {
                     // && object.element.has_gravity() {
                     let (mut dx, mut dy) = object.velocity;
                     if object.element.has_gravity() {
-                        dx += rand::thread_rng().gen_range(-2..2);
                         dy += 2;
+                    }
+                    if object.die {
+                        world.0[i][j] = None;
                     }
                     moved_positions.insert(move_to(world, i, j, dx, dy));
                 }
@@ -95,14 +98,35 @@ fn main() -> Result<(), String> {
     let mut fps = 0;
     let mut brush_size = 10;
     let texture_creator = canvas.texture_creator();
+    let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
     let surface = Surface::from_file("assets/cursor.png")
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
     let cursor = Cursor::from_surface(surface, 0, 0)
         .map_err(|err| format!("failed to load cursor: {}", err))?;
     cursor.set();
+    let elements: Vec<Rc<dyn Element>> = vec![Rc::new(Wall), Rc::new(Sand), Rc::new(Fire)];
+    let mut current_element: usize = 0;
+    // Load a font
+    let mut font = ttf_context.load_font("assets/trim.ttf", 256)?;
+    font.set_style(sdl2::ttf::FontStyle::BOLD);
+    let mut hud_text_surface = font
+        .render(elements[current_element].name())
+        .blended(Color::RGBA(255, 255, 255, 255))
+        .map_err(|e| e.to_string())?;
+
+    macro_rules! render_hud_text {
+        () => {
+            hud_text_surface = font
+                .render(format!("{} {}", elements[current_element].name(), brush_size).as_str())
+                .blended(Color::RGBA(255, 255, 255, 255))
+                .map_err(|e| e.to_string())?;
+        };
+    }
+    render_hud_text!();
 
     'running: loop {
         // Handle events
+
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -112,10 +136,24 @@ fn main() -> Result<(), String> {
                 } => {
                     break 'running;
                 }
+                Event::KeyDown {
+                    keycode: Some(Keycode::Tab),
+                    ..
+                } => {
+                    if current_element < elements.len() - 1 {
+                        current_element += 1;
+                    } else {
+                        current_element = 0;
+                    }
+                    render_hud_text!();
+                }
                 Event::MouseWheel { y, .. } => {
                     if brush_size > 2 {
                         brush_size += y;
+                    } else {
+                        brush_size = 3;
                     }
+                    render_hud_text!();
                 }
                 _ => {}
             }
@@ -133,15 +171,9 @@ fn main() -> Result<(), String> {
                 state.x(),
                 state.y(),
                 brush_size,
-                Some(Rc::new(Sand)),
+                Some(elements[current_element].clone()),
             )),
-            Some(MouseButton::Right) => drop(world.place_square::<_, Wall>(
-                state.x(),
-                state.y(),
-                brush_size,
-                Some(Rc::new(Wall)),
-            )),
-            Some(MouseButton::Middle) => {
+            Some(MouseButton::Right) => {
                 drop(world.place_square::<_, ()>(state.x(), state.y(), brush_size, None))
             }
             _ => {}
@@ -150,12 +182,12 @@ fn main() -> Result<(), String> {
         simulate(&mut world);
         canvas.set_draw_color(Color::BLACK);
         canvas.clear();
-        render_particles(&mut canvas, &world);
+        let hud_text_texture = texture_creator
+            .create_texture_from_surface(&hud_text_surface)
+            .map_err(|e| e.to_string())?;
+        canvas.copy(&hud_text_texture, None, Rect::new(0, 0, 120, 60))?;
 
-        // let brush_size = 100;
-        // sdl_context.mouse().show_cursor(false);
-        // canvas.draw_rect(Rect::new(event_pump.mouse_state().x()-brush_size/2, event_pump.mouse_state().y()-brush_size/2, brush_size.try_into().unwrap(), brush_size.try_into().unwrap())).unwrap();
-        // canvas.copy(&texture, None, Some(Rect::new(event_pump.mouse_state().x()-brush_size/2, event_pump.mouse_state().y()-brush_size/2, brush_size.try_into().unwrap(), brush_size.try_into().unwrap())))?;
+        render_particles(&mut canvas, &world);
 
         canvas.present();
 
